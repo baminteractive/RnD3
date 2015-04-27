@@ -1,4 +1,15 @@
 <h4>{{title}}</h4>
+<div class="btn-group" data-toggle="buttons">
+  <label class="btn btn-primary">
+    <input {{action 'toggleProperty' 'Global'}} type="radio" name="options"> Global
+  </label>
+  <label class="btn btn-primary">
+    <input {{action 'toggleProperty' 'Platform'}} type="radio" name="options"> Platform
+  </label>
+  <label class="btn btn-primary">
+    <input {{action 'toggleProperty' 'Publisher'}} type="radio" name="options"> Publisher
+  </label>
+</div>
 <div id="global_graphic">{{svg}}</div>
 
 {{outlet}}

@@ -1,4 +1,4 @@
-/* global d3:true */
+/* global d3:true, _:true */
 
 import Ember from 'ember';
 
@@ -7,6 +7,33 @@ export default Ember.Controller.extend({
   title: function() {
     return this.get('model.title');
   }.property('title'),
+
+  activeToggle: 'Global',
+
+  gameNodes: function (root) {
+    var gameNodes = [];
+
+    root.forEach( function (game) {
+      game.packageName = game.Publisher;
+      game.className = game.Game;
+      game.value = game.Global;
+      gameNodes.push(game);
+    });
+
+    var sortBy = this.get('activeToggle');
+    gameNodes.sort(function (a, b) {
+      if (a[sortBy] > b[sortBy]) {
+        return -1;
+      }
+      if (a[sortBy] < b[sortBy]) {
+        return 1;
+      }
+      return 0;
+    });
+
+    return {children: gameNodes};
+  },
+
 
   svg: function() {
     var gamesArray = this.get('model.games');
@@ -20,19 +47,6 @@ export default Ember.Controller.extend({
       .size([diameter, diameter])
       .padding(1.5);
 
-      function classes(root) {
-        var gameNodes = [];
-
-        root.forEach( function (game) {
-          game.packageName = game.Publisher;
-          game.className = game.Game;
-          game.value = game.Global;
-          gameNodes.push(game);
-        });
-
-        return {children: gameNodes};
-      }
-
     var svg = d3.select("body").append("svg")
       .remove()
       .attr('width', diameter)
@@ -40,7 +54,7 @@ export default Ember.Controller.extend({
       .attr('class', 'bubble');
 
     var node = svg.selectAll(".node")
-        .data(bubble.nodes(classes(gamesArray))
+        .data(bubble.nodes(this.gameNodes(gamesArray))
         .filter(function(d) { return d.Game; }))
       .enter().append("g")
         .attr("class", "node")
@@ -51,7 +65,7 @@ export default Ember.Controller.extend({
 
     node.append("circle")
         .attr("r", function(d) { return d.r; })
-        .style("fill", function(d) { return color(d.Publisher); });
+        .style("fill", function(d) { return color(d.Platform); });
 
     node.append("text")
         .attr("dy", ".3em")
@@ -61,6 +75,12 @@ export default Ember.Controller.extend({
     d3.select(window.frameElement).style("height", diameter + "px");
 
     return svg.node();
-  }.property('svg')
+  }.property('activeToggle'),
+
+  actions: {
+    toggleProperty: function (id) {
+      this.set('activeToggle', id);
+    }
+  }
 
 });

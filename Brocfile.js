@@ -22,5 +22,6 @@ app.import('bower_components/bootstrap/dist/css/bootstrap.css.map', {
   destDir: 'assets'
 });
 app.import('bower_components/d3/d3.js');
+app.import('bower_components/lodash/lodash.min.js');
 
 module.exports = app.toTree();
