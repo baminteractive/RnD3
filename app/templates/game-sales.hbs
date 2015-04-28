@@ -1,13 +1,16 @@
 <h4>{{title}}</h4>
 <div class="btn-group" data-toggle="buttons">
   <label class="btn btn-primary">
-    <input {{action 'toggleProperty' 'Global'}} type="radio" name="options"> Global
+    <input {{action 'toggleProperty' 'Genre'}} type="radio" name="options"> Genre
   </label>
   <label class="btn btn-primary">
     <input {{action 'toggleProperty' 'Platform'}} type="radio" name="options"> Platform
   </label>
   <label class="btn btn-primary">
     <input {{action 'toggleProperty' 'Publisher'}} type="radio" name="options"> Publisher
+  </label>
+  <label class="btn btn-primary">
+    <input {{action 'toggleProperty' 'null'}} type="radio" name="options"> All
   </label>
 </div>
 <div id="global_graphic">{{svg}}</div>

@@ -8,7 +8,11 @@ export default Ember.Controller.extend({
     return this.get('model.title');
   }.property('title'),
 
-  activeToggle: 'Global',
+  activeToggle: 'Platform',
+
+  svgObj: null,
+  nodeData: null,
+  nodes: null,
 
   gameNodes: function (root) {
     var gameNodes = [];
@@ -20,43 +24,47 @@ export default Ember.Controller.extend({
       gameNodes.push(game);
     });
 
-    var sortBy = this.get('activeToggle');
-    gameNodes.sort(function (a, b) {
-      if (a[sortBy] > b[sortBy]) {
-        return -1;
-      }
-      if (a[sortBy] < b[sortBy]) {
-        return 1;
-      }
-      return 0;
-    });
+    this.set('nodeData', gameNodes);
 
     return {children: gameNodes};
   },
 
+  labels: function (centers) {
+    this.svgObj.selectAll(".label").remove();
+
+    this.svgObj.selectAll(".label")
+    .data(centers).enter().append("text")
+    .attr("class", "label")
+    .text(function (d) { return d.name; })
+    .attr("transform", function (d) {
+      return "translate(" + (d.x + (d.dx / 2)) + ", " + (d.y + 20) + ")";
+    });
+  },
+
+  diameter: 960,
 
   svg: function() {
-    var gamesArray = this.get('model.games');
 
-    var diameter = 960,
+    var diameter = this.diameter,
       format = d3.format(',d'),
-      color = d3.scale.category20c();
+      color = d3.scale.category10();
 
     var bubble = d3.layout.pack()
       .sort(null)
       .size([diameter, diameter])
       .padding(1.5);
 
-    var svg = d3.select("body").append("svg")
+    this.svgObj = d3.select("body").append("svg")
       .remove()
       .attr('width', diameter)
       .attr('height', diameter)
       .attr('class', 'bubble');
 
-    var node = svg.selectAll(".node")
-        .data(bubble.nodes(this.gameNodes(gamesArray))
-        .filter(function(d) { return d.Game; }))
-      .enter().append("g")
+    var node = this.svgObj.selectAll(".node")
+        .data(bubble.nodes(this.gameNodes(this.get('model.games')))
+        .filter(function(d) { return d.Game; }));
+
+    node.enter().append("g")
         .attr("class", "node")
         .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
 
@@ -74,13 +82,42 @@ export default Ember.Controller.extend({
 
     d3.select(window.frameElement).style("height", diameter + "px");
 
-    return svg.node();
-  }.property('activeToggle'),
+    return this.svgObj.node();
+  }.property('none'),
 
   actions: {
     toggleProperty: function (id) {
       this.set('activeToggle', id);
+
+      var centers, map,
+        data = this.get('nodeData');
+
+      centers = _.uniq(_.pluck(data, id)).map(function (d) {
+        return {name: d, value: 1};
+      });
+
+      _.each(centers, function(category){
+        category.children = _.filter(data, function(n){
+          return n[id] === category.name;
+        });
+      });
+
+      map = d3.layout.treemap().size([this.diameter, this.diameter]).ratio(1/1);
+      map.nodes({children: centers});
+
+      this.labels(centers);
+
+      var bubble = d3.layout.pack()
+        .sort(null)
+        .size([this.diameter, this.diameter])
+        .padding(1.5);
+
+      this.svgObj.selectAll(".node")
+        .data(bubble.nodes({children: centers}))
+        .attr("transform", function (d) {
+          return "translate(" + (d.x) + ", " + (d.y) + ")";
+        });
+
     }
   }
-
 });
