@@ -59,12 +59,11 @@ export default Ember.Controller.extend({
     var nodes = bubble.nodes(this.gameNodes(this.get('model.games')))
         .filter(function(d) { return d.Game; });
 
-    // this.force
-    //   .size([this.diameter, this.diameter])
-    //   .gravity(0)
-    //   .friction(0)
-    //   .on('tick', tick)
-    //   .start();
+    this.force
+      .size([this.diameter, this.diameter])
+      .gravity(0)
+      .friction(0)
+      .on('tick', tick);
 
     this.svgObj = d3.select("body").append("svg")
       .remove()
@@ -110,7 +109,7 @@ export default Ember.Controller.extend({
       node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
     }
 
-    this.force.nodes(node.data()).start();
+    this.force.nodes(node.data());
 
     return this.svgObj.node();
   }.property('none'),
