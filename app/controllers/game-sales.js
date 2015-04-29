@@ -13,14 +13,17 @@ export default Ember.Controller.extend({
   svgObj: null,
   nodeData: null,
   nodes: null,
+  force: d3.layout.force(),
 
   gameNodes: function (root) {
     var gameNodes = [];
-
+    var diameter = this.diameter;
     root.forEach( function (game) {
       game.packageName = game.Publisher;
       game.className = game.Game;
       game.value = game.Global;
+      game.nx = diameter / 2;
+      game.ny = diameter / 2;
       gameNodes.push(game);
     });
 
@@ -37,7 +40,7 @@ export default Ember.Controller.extend({
     .attr("class", "label")
     .text(function (d) { return d.name; })
     .attr("transform", function (d) {
-      return "translate(" + (d.x + (d.dx / 2)) + ", " + (d.y + 20) + ")";
+      return "translate(" + (d.x + (d.dx / 3)) + ", " + (d.y + 20) + ")";
     });
   },
 
@@ -46,13 +49,22 @@ export default Ember.Controller.extend({
   svg: function() {
 
     var diameter = this.diameter,
-      format = d3.format(',d'),
       color = d3.scale.category10();
 
     var bubble = d3.layout.pack()
       .sort(null)
       .size([diameter, diameter])
       .padding(1.5);
+
+    var nodes = bubble.nodes(this.gameNodes(this.get('model.games')))
+        .filter(function(d) { return d.Game; });
+
+    // this.force
+    //   .size([this.diameter, this.diameter])
+    //   .gravity(0)
+    //   .friction(0)
+    //   .on('tick', tick)
+    //   .start();
 
     this.svgObj = d3.select("body").append("svg")
       .remove()
@@ -61,15 +73,16 @@ export default Ember.Controller.extend({
       .attr('class', 'bubble');
 
     var node = this.svgObj.selectAll(".node")
-        .data(bubble.nodes(this.gameNodes(this.get('model.games')))
-        .filter(function(d) { return d.Game; }));
+        .data(nodes);
 
     node.enter().append("g")
         .attr("class", "node")
+        // .attr("cx", function(d) { return d.x; })
+        // .attr("cy", function(d) { return d.y; });
         .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
 
     node.append("title")
-        .text(function(d) { return d.Game + ": " + format(d.Global); });
+        .text(function(d) { return d.Game + ": " + d.Global; });
 
     node.append("circle")
         .attr("r", function(d) { return d.r; })
@@ -81,6 +94,23 @@ export default Ember.Controller.extend({
         .text(function(d) { if(d.Game) {return d.Game.substring(0, d.r / 4);} });
 
     d3.select(window.frameElement).style("height", diameter + "px");
+
+    var self = this;
+    function tick(e) {
+      var nodeData = self.get('nodeData');
+      // Push different nodes in different directions for clustering.
+      var k = 8 * e.alpha;
+      nodeData.forEach(function(o) {
+        var xdif = k * 0.3 * (o.nx - o.x);
+        var ydif = k * 0.3 * (o.ny - o.y);
+        o.y += ydif;
+        o.x += xdif;
+      });
+
+      node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+    }
+
+    this.force.nodes(node.data()).start();
 
     return this.svgObj.node();
   }.property('none'),
@@ -96,28 +126,20 @@ export default Ember.Controller.extend({
         return {name: d, value: 1};
       });
 
-      _.each(centers, function(category){
-        category.children = _.filter(data, function(n){
-          return n[id] === category.name;
-        });
-      });
-
       map = d3.layout.treemap().size([this.diameter, this.diameter]).ratio(1/1);
       map.nodes({children: centers});
 
+      _.each(data, function(item){
+        var category = _.find(centers, {name:item[id]});
+        item.nx = category.x + category.dx / 2;
+        item.ny = category.y + category.dy / 2;
+      });
+
+      this.set('nodeData', data);
+
+      this.force.alpha(0.1).start();
+
       this.labels(centers);
-
-      var bubble = d3.layout.pack()
-        .sort(null)
-        .size([this.diameter, this.diameter])
-        .padding(1.5);
-
-      this.svgObj.selectAll(".node")
-        .data(bubble.nodes({children: centers}))
-        .attr("transform", function (d) {
-          return "translate(" + (d.x) + ", " + (d.y) + ")";
-        });
-
     }
   }
 });
